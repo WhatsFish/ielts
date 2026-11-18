@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { testApp } from "./app-helper.mjs";
 import { tokenHash } from "../src/lib/auth";
+import { catalogInput, catalogQuestionId, importCatalog } from "../src/lib/catalog-import";
 
 test("admin setup, private catalog and persisted answer lifecycle", async () => {
   const app = await testApp();
@@ -63,5 +65,47 @@ test("admin setup, private catalog and persisted answer lifecycle", async () => 
     assert.equal((await call("login", "POST", { username: "admin", password })).status, 200);
     for (let i = 0; i < 12; i++) await call("login", "POST", { username: "admin", password: "Incorrect123" });
     assert.equal((await call("login", "POST", { username: "admin", password })).status, 429);
+  } finally { await app.close(); }
+});
+
+test("catalog imports are idempotent and preserve answers on both demos and imported questions", async () => {
+  const app = await testApp();
+  try {
+    const migration = await readFile(new URL("../db/migrations/002-retained-bank.sql", import.meta.url), "utf8");
+    await app.pool.query(migration);
+    await app.pool.query(migration);
+    const demo = (await app.pool.query("SELECT id FROM questions ORDER BY id LIMIT 1")).rows[0].id;
+    await app.pool.query("INSERT INTO answers(question_id,body) VALUES($1,'Saved demo answer')", [demo]);
+    const input = catalogInput.parse({
+      collection: "Integration test collection",
+      questions: [
+        { part: 1, topic: "Example", title: "Short question", prompt: "What do you enjoy?", bank: "retained" },
+        { part: 2, topic: "Example story", title: "An experience", prompt: "Describe an experience.\n\nYou should say:\n- What happened\nAnd explain why it mattered.", bank: "new" },
+      ],
+    });
+    const run = async () => {
+      const client = await app.pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await importCatalog(client, input, true);
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
+    };
+    assert.deepEqual(await run(), { upserted: 2, removedUnansweredDemos: 11 });
+    const id = catalogQuestionId(input.collection, input.questions[0]);
+    await app.pool.query("INSERT INTO answers(question_id,body) VALUES($1,'Saved imported answer')", [id]);
+    input.questions[0].title = "Edited heading";
+    assert.deepEqual(await run(), { upserted: 2, removedUnansweredDemos: 0 });
+    const rows = (await app.pool.query("SELECT question_id,body FROM answers ORDER BY body")).rows;
+    assert.deepEqual(rows, [
+      { question_id: demo, body: "Saved demo answer" },
+      { question_id: id, body: "Saved imported answer" },
+    ]);
+    assert.equal((await app.pool.query("SELECT count(*)::int AS n FROM questions")).rows[0].n, 3);
+    assert.equal((await app.pool.query("SELECT title FROM questions WHERE id=$1", [id])).rows[0].title, "Edited heading");
   } finally { await app.close(); }
 });

@@ -1,6 +1,6 @@
 BEGIN;
 CREATE TABLE IF NOT EXISTS schema_version (version integer PRIMARY KEY);
-INSERT INTO schema_version VALUES(1) ON CONFLICT DO NOTHING;
+INSERT INTO schema_version VALUES(1),(2) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS admin_credentials (
   id boolean PRIMARY KEY DEFAULT true CHECK(id),
   password_hash text NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS questions (
   topic text NOT NULL,
   title text NOT NULL,
   prompt text NOT NULL,
-  bank text NOT NULL CHECK(bank IN ('regular','new')),
+  bank text NOT NULL CHECK(bank IN ('regular','retained','new')),
   collection text NOT NULL,
   is_demo boolean NOT NULL DEFAULT false,
   sort_order integer NOT NULL DEFAULT 0

@@ -7,6 +7,7 @@ import type { Answer, Catalog, Question } from "@/lib/domain";
 
 type View = "overview" | "catalog";
 const emptyDraft = { title: "", body: "", feedback: "" };
+const bankLabels = { regular: "常驻", retained: "保留", new: "新增" };
 
 function Part({ value }: { value: number }) {
   return <span className={`part part-${value}`}>PART {value}</span>;
@@ -187,7 +188,7 @@ export function Workspace() {
           <label className="search-field"><Search size={17} /><input aria-label="搜索题目" placeholder="搜索题目、话题或英文关键词…" value={search} onChange={e => setSearch(e.target.value)} />{search && <button className="icon-button" aria-label="清除搜索" onClick={() => setSearch("")}><X size={15} /></button>}</label>
           <div className="filter-row">
             <div className="segmented" aria-label="Part 筛选">{["all", "1", "2", "3"].map(p => <button key={p} aria-pressed={part === p} className={part === p ? "selected" : ""} onClick={() => setPart(p)}>{p === "all" ? "全部" : `Part ${p}`}</button>)}</div>
-            <label className="sr-only" htmlFor="bank-filter">题库类型</label><select id="bank-filter" value={bank} onChange={e => setBank(e.target.value)}><option value="all">全部类型</option><option value="regular">常驻题</option><option value="new">新增题</option></select>
+            <label className="sr-only" htmlFor="bank-filter">题库类型</label><select id="bank-filter" value={bank} onChange={e => setBank(e.target.value)}><option value="all">全部类型</option><option value="new">新增题</option><option value="retained">保留题</option><option value="regular">常驻题</option></select>
             <label className="sr-only" htmlFor="topic-filter">话题</label><select id="topic-filter" value={topic} onChange={e => setTopic(e.target.value)}><option value="all">全部话题</option>{topics.map(t => <option key={t}>{t}</option>)}</select>
             {collections.length > 1 && <><label className="sr-only" htmlFor="collection-filter">题库资料</label><select id="collection-filter" value={collection} onChange={e => setCollection(e.target.value)}><option value="all">全部题库</option>{collections.map(c => <option key={c}>{c}</option>)}</select></>}
             <label className="checkbox-label"><input type="checkbox" checked={unanswered} onChange={e => setUnanswered(e.target.checked)} />只看暂无答案</label>
@@ -196,12 +197,12 @@ export function Workspace() {
         <section className={`catalog-layout ${question ? "has-selection" : ""}`}>
           <div className="question-list"><div className="list-heading"><span>题目列表</span><span>{filtered.length} 道</span></div>
             {!filtered.length && <div className="list-empty"><Search size={24} /><p>{questions.length ? "没有找到匹配的题目" : "题库还没有题目"}</p><small>{questions.length ? "试试其他关键词或筛选条件" : "提供题库资料后，由后台整理录入"}</small></div>}
-            {filtered.map(q => <button key={q.id} className={`question-item ${selectedId === q.id ? "selected" : ""}`} onClick={() => selectQuestion(q)}><span className="question-tags"><Part value={q.part} /><span className={q.bank === "new" ? "new-tag" : "regular-tag"}>{q.bank === "new" ? "新增" : "常驻"}</span>{q.is_demo && <span className="demo-tag">示例</span>}</span><strong>{q.title}</strong><span className="question-preview" lang="en">{q.prompt.split("\n")[0]}</span><span className="question-bottom"><span>{q.topic}</span><span className={q.answer_count ? "has-answer" : ""}>{q.answer_count ? <><Check size={12} />{q.answer_count} 份答案</> : "暂无答案"}</span></span></button>)}
+            {filtered.map(q => <button key={q.id} className={`question-item ${selectedId === q.id ? "selected" : ""}`} onClick={() => selectQuestion(q)}><span className="question-tags"><Part value={q.part} /><span className={q.bank === "new" ? "new-tag" : "regular-tag"}>{bankLabels[q.bank]}</span>{q.is_demo && <span className="demo-tag">示例</span>}</span><strong>{q.title}</strong>{q.title !== q.prompt && <span className="question-preview" lang="en">{q.prompt.split("\n")[0]}</span>}<span className="question-bottom"><span>{q.topic}</span><span className={q.answer_count ? "has-answer" : ""}>{q.answer_count ? <><Check size={12} />{q.answer_count} 份答案</> : "暂无答案"}</span></span></button>)}
           </div>
           <div className="question-detail">
             {!question ? <div className="select-empty"><span className="empty-illustration"><BookOpen size={30} /></span><h2>挑一道题，开始说说看</h2><p>点击左侧题目，查看题干、复制问题，<br />或者保存你练习后的答案和反馈。</p><span className="tiny-label">ONE QUESTION. A LITTLE MORE CONFIDENCE.</span></div> : <>
               <button className="mobile-back" onClick={() => { if (mayLeave()) { closeEditor(); setSelectedId(null); } }}><ArrowLeft size={16} />返回题目列表</button>
-              <div className="detail-heading"><div><div className="question-tags"><Part value={question.part} /><span className="topic-label">{question.topic}</span></div><h2>{question.title}</h2><p className="collection-label">{question.collection}</p></div><button className="button secondary compact" onClick={() => copy(question.prompt)}><Copy size={15} />复制题目</button></div>
+              <div className="detail-heading"><div><div className="question-tags"><Part value={question.part} /><span className="topic-label">{question.topic}</span><span className={question.bank === "new" ? "new-tag" : "regular-tag"}>{bankLabels[question.bank]}</span></div><h2>{question.title === question.prompt ? question.topic : question.title}</h2><p className="collection-label">{question.collection}</p></div><button className="button secondary compact" onClick={() => copy(question.prompt)}><Copy size={15} />复制题目</button></div>
               {question.is_demo && <p className="demo-inline">示例题 · 仅供体验，不代表真实考季题库</p>}
               <div className="prompt-box" lang="en">{question.prompt}</div>
               <div className="answer-section-title"><div><h3>我的答案<span>{answersLoading ? "…" : answers.length}</span></h3><p>保留不同版本，也留住不同思路。</p></div><button className="button primary compact" onClick={() => editAnswer()} disabled={saving}><Plus size={16} />添加答案</button></div>

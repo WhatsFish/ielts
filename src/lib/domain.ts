@@ -20,7 +20,7 @@ export interface Question {
   topic: string;
   title: string;
   prompt: string;
-  bank: "regular" | "new";
+  bank: "regular" | "retained" | "new";
   collection: string;
   is_demo: boolean;
   answer_count: number;

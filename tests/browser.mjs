@@ -11,6 +11,7 @@ try {
   app = await testApp();
   const token = randomBytes(32).toString("hex");
   await app.pool.query("INSERT INTO password_tokens(token_hash,expires_at) VALUES($1,now()+interval '1 hour')", [createHash("sha256").update(token).digest("hex")]);
+  await app.pool.query("UPDATE questions SET bank='retained' WHERE id='30170000-0000-4000-8000-000000000001'");
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, permissions: ["clipboard-read", "clipboard-write"] });
   const page = await context.newPage();
   const failures = [];
@@ -30,6 +31,9 @@ try {
     await page.screenshot({ path: `${screenshots}/ielts-overview-desktop.png`, fullPage: true });
   }
   await page.getByRole("button", { name: "打开题库" }).click();
+  await page.getByLabel("题库类型", { exact: true }).selectOption("retained");
+  assert.equal(await page.locator(".question-item").count(), 1);
+  await page.getByLabel("题库类型", { exact: true }).selectOption("all");
   await page.getByRole("button").filter({ hasText: "你的学习与工作" }).click();
   await page.getByRole("button", { name: "复制题目" }).click();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "Do you work or are you a student?");

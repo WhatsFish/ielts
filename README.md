@@ -13,6 +13,31 @@ Formal question-bank material is curated on the backend, not imported through a
 public upload interface. Keep source material out of this public repository.
 When replacing example questions, preserve any with saved answers.
 
+## Private question-bank updates
+
+The operator extracts and checks the user's PDF locally. Neither the original
+PDF, extracted text, curated JSON nor database backups belong in this public
+repository. Preserve source wording, the complete Part 2 cue card and the topic
+context of Part 3 questions. Categories are source-labelled `new`, `retained`
+(carried over), or `regular` (perennial); never infer exam authenticity.
+
+On an existing installation, apply `db/migrations/002-retained-bank.sql` before
+importing retained questions. A curated private JSON file contains `collection`
+and `questions` with `part`, `topic`, `title`, `prompt`, and `bank`; optional source
+metadata includes filename, SHA-256, page count, and each question's source page
+and number. After loading project configuration with `PG_HOST=127.0.0.1`, run:
+
+```sh
+npx tsx scripts/import-catalog.ts /private/catalog.json --replace-unanswered-demos
+```
+
+The command validates the entire input before mutation, writes a mode-600
+pre-import snapshot under `/data/ielts/backups`, then imports in a transaction.
+Stable IDs make re-imports update the same records without replacing their
+answers. Only unanswered demos are removed; demo questions with answers and
+other real collections are preserved. Identical prompts under different topic
+contexts remain separate; duplicates within a topic are rejected.
+
 ## Stack
 
 Next.js 14 App Router, React 18, Tailwind, PostgreSQL and lucide icons. Next is
