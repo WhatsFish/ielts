@@ -6,6 +6,18 @@ multiple answers per question, optional ChatGPT feedback, editing, and deletion.
 The catalog and selected question share one workspace. Mobile uses list/detail
 navigation without a separate route.
 
+The catalog is organized by **topic**, not by individual question count. Part 1
+student/work variants live under the same topic. Part 2 cue cards and their
+source-linked Part 3 discussion questions share one group. Every small question
+retains its own ID and independent answers; grouping never migrates or merges
+answer content. Source collection and category boundaries are preserved.
+
+Overview counts refer to topic groups. A started topic has an answer on at least
+one constituent question, not necessarily every question; each group shows the
+per-question coverage. Search matches any question but keeps its entire topic
+visible. The main source filter is new/existing; original retained/perennial
+labels remain visible in the topic's source note.
+
 The 12 original example questions in `db/demo.sql` are clearly labelled demo
 content, not an official or current-season question bank. There are no fabricated
 answers, practice counts, or scores. Counts mean answers saved, not skills mastered.
