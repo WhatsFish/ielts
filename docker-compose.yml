@@ -1,0 +1,17 @@
+services:
+  web:
+    image: ielts-web:local
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:3017:3000"
+    mem_limit: 384m
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+networks:
+  default:
+    name: traffic-monitor_default
+    external: true
